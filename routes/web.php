@@ -8,3 +8,5 @@ Route::get('/', [WebController::class, 'homePage'])->name('web-home');
 Route::get('/login', function () {
     return view('login'); // ✅ "veiw" → "view"
 });
+
+
