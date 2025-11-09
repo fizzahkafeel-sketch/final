@@ -5,8 +5,11 @@ use App\Http\Controllers\WebController; // ✅ You need to import your controlle
 
 Route::get('/', [WebController::class, 'homePage'])->name('web-home');
 
+Route::post('/upload-image', [WebController::class, 'uploadImage'])->name('upload-image');
+
 Route::get('/login', function () {
     return view('login'); // ✅ "veiw" → "view"
 });
+
 
 
