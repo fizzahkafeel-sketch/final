@@ -8,7 +8,7 @@
     <meta content="" name="keywords">
     <meta content="" name="description">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-
+                                        
     <!-- Favicon -->
     <link href="image.1.png" rel="icon">
 
@@ -30,7 +30,7 @@
 
     <!-- Template Stylesheet -->
     <link href="{{asset("style.css")}}" rel="stylesheet">
-    
+
     <!-- Custom Styles for Image Upload -->
     <style>
         .drop-zone {
@@ -42,50 +42,50 @@
             background-color: #fff;
             cursor: pointer;
         }
-        
+
         .drop-zone:hover {
             border-color: #007bff;
             background-color: #f8f9fa;
         }
-        
+
         .drop-zone.drag-over {
             border-color: #007bff;
             background-color: #e7f3ff;
             transform: scale(1.02);
         }
-        
+
         .drop-zone.file-selected {
             border-color: #28a745;
             background-color: #f0fff4;
         }
-        
+
         .drop-zone.uploading {
             border-color: #ffc107;
             background-color: #fffbf0;
         }
-        
+
         .drop-zone.upload-success {
             border-color: #28a745;
             background-color: #d4edda;
         }
-        
+
         .drop-zone.upload-error {
             border-color: #dc3545;
             background-color: #f8d7da;
         }
-        
+
         .drop-zone-text {
             font-size: 1.2rem;
             font-weight: 500;
             color: #333;
             margin-bottom: 10px;
         }
-        
+
         .drop-zone-subtext {
             color: #666;
             margin: 10px 0;
         }
-        
+
         .browse-btn {
             background-color: #007bff;
             color: white;
@@ -96,13 +96,19 @@
             font-size: 1rem;
             transition: background-color 0.3s ease;
         }
-        
+
         .browse-btn:hover {
             background-color: #0056b3;
         }
-        
+
         .file-input {
             display: none;
+        }
+
+        @media (max-width: 576px) {
+            .browse-btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -145,14 +151,16 @@
          <div class="text-center mb-4"> <p class="lead text-muted">Upload your image by dragging & dropping or browsing</p>
          </div>
         <div class="drop-zone" id="dropZone">
-                    <div class="drop-zone-text">Drag & Drop your image here</div>
-                    <div class="drop-zone-subtext">or</div>
-                        <button class="browse-btn" onclick="document.getElementById('fileInput').click()">
-                        Upload Image
-                        </button>
-                    <input type="file" id="fileInput" class="file-input" accept="image/*">
-                    <div class="mt-3 text-muted small">Supports: JPG, PNG (Max 10MB)</div>
-
+            <div class="drop-zone-text">Drag & Drop your image here</div>
+            <div class="drop-zone-subtext">or</div>
+            <button class="browse-btn" type="button" onclick="document.getElementById('fileInput').click()">
+                Upload Image
+            </button>
+            <input type="file" id="fileInput" class="file-input" accept="image/*">
+            <div class="mt-3 text-muted small">Supports: JPG, PNG (Max 10MB)</div>
+            <button type="button" id="proceedButton" class="btn btn-primary mt-3 px-4">
+                Proceed with Image
+            </button>
         </div>
 
     </div>
@@ -228,99 +236,113 @@
         // Protect this page - uncomment to require login
         // protectPage();
     </script>
-    
+
     <!-- Image Upload Script -->
     <script>
         // Get CSRF token from meta tag or use Laravel's default
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
-        
+
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
         const dropZoneText = dropZone.querySelector('.drop-zone-text');
-        
+        const proceedButton = document.getElementById('proceedButton');
+
         // Prevent default drag behaviors
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropZone.addEventListener(eventName, preventDefaults, false);
             document.body.addEventListener(eventName, preventDefaults, false);
-        });
-        
+        });//dragging files can open them in the browser — this prevents that.
+
         function preventDefaults(e) {
             e.preventDefault();
             e.stopPropagation();
         }
-        
+
         // Highlight drop zone when item is dragged over it
         ['dragenter', 'dragover'].forEach(eventName => {
             dropZone.addEventListener(eventName, highlight, false);
         });
-        
+
         ['dragleave', 'drop'].forEach(eventName => {
             dropZone.addEventListener(eventName, unhighlight, false);
         });
-        
+
         function highlight(e) {
             dropZone.classList.add('drag-over');
         }
-        
+
         function unhighlight(e) {
             dropZone.classList.remove('drag-over');
         }
-        
+
         // Handle dropped files
         dropZone.addEventListener('drop', handleDrop, false);
-        
+
         function handleDrop(e) {
             const dt = e.dataTransfer;
             const files = dt.files;
             handleFiles(files);
         }
-        
+
         // Handle file input change
         fileInput.addEventListener('change', function(e) {
             handleFiles(e.target.files);
         });
-        
+
+        // Proceed button handler
+        if (proceedButton) {
+            proceedButton.addEventListener('click', () => {
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    alert('Please upload an image before proceeding.');
+                    return;
+                }
+
+                alert('Proceeding with the selected image.');
+            });
+        }
+
         function handleFiles(files) {
             if (files.length === 0) return;
-            
+
             const file = files[0];
-            
+
             // Validate file type
             if (!file.type.match('image.*')) {
                 alert('Please select an image file (JPG, PNG, etc.)');
                 return;
-            }
-            
+            }//Checks if it’s an image:
+
             // Validate file size (10MB = 10 * 1024 * 1024 bytes)
             if (file.size > 10 * 1024 * 1024) {
                 alert('File size exceeds 10MB limit');
                 return;
-            }
-            
+            }//Checks size limit (10MB):
+
             // Update UI to show selected file
             dropZoneText.textContent = `Selected: ${file.name}`;
             dropZone.classList.add('file-selected');
-            
-            // Upload the file
+//calls UploadFile(file) to send it to the backend.
+
+// Upload the file
             uploadFile(file);
         }
-        
+
         function uploadFile(file) {
             const formData = new FormData();
             formData.append('image', file);
-            formData.append('_token', csrfToken);
-            
+            formData.append('_token', csrfToken);//Uses FormData to send both the file and the CSRF token.
+
             // Show loading state
             dropZoneText.textContent = 'Uploading...';
             dropZone.classList.add('uploading');
-            
+
             // Send to backend
             fetch('{{ route("upload-image") }}', {
                 method: 'POST',
                 body: formData,
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                }
+                }//Sends it to Laravel’s backend route upload-image
             })
             .then(response => response.json())
             .then(data => {
@@ -328,14 +350,14 @@
                     dropZoneText.textContent = 'Upload successful!';
                     dropZone.classList.remove('uploading');
                     dropZone.classList.add('upload-success');
-                    
-                    // Reset after 2 seconds
+
+                    // Reset after 5 seconds
                     setTimeout(() => {
                         dropZoneText.textContent = 'Drag & Drop your image here';
                         dropZone.classList.remove('upload-success', 'file-selected');
                         fileInput.value = '';
-                    }, 2000);
-                    
+                    }, 5000);
+
                     // Show success message
                     if (data.message) {
                         alert(data.message);
@@ -349,9 +371,9 @@
                 dropZoneText.textContent = 'Upload failed. Please try again.';
                 dropZone.classList.remove('uploading');
                 dropZone.classList.add('upload-error');
-                
+
                 alert('Error: ' + error.message);
-                
+
                 // Reset after 3 seconds
                 setTimeout(() => {
                     dropZoneText.textContent = 'Drag & Drop your image here';

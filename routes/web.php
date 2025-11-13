@@ -11,5 +11,7 @@ Route::get('/login', function () {
     return view('login'); // ✅ "veiw" → "view"
 });
 
-
+Route::get('/watermark-editor', function () {
+    return view('watermark-editor');
+})->name('watermark.editor');
 

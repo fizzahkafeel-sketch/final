@@ -133,7 +133,7 @@
   align-items: center;       /* center vertically */
   min-height: 100vh;         /* full viewport height */
   flex-direction: column;    /* keep the text and drop-zone stacked vertically */
- 
+
 }
 
 .hero-header .breadcrumb-item+.breadcrumb-item::before {
@@ -205,11 +205,11 @@
 .project-item img {
     transition: .5s;
 }
-  
+
 .project-item:hover img {
     transform: scale(1.2);
 }
-  
+
 .project-overlay {
     position: absolute;
     padding: 25px;
@@ -294,11 +294,11 @@
 .team-item img {
     transition: .5s;
 }
-  
+
 .team-item:hover img {
     transform: scale(1.2);
 }
-  
+
 .team-overlay {
     position: absolute;
     padding: 30px;
@@ -483,7 +483,7 @@
             #card-body img {
                 width: 360px;
                 height: 150px;
-            
+
                }
                /* Footer */
                #card-footer {
@@ -496,7 +496,7 @@
             width: 400px;
             height: 500px;
             background-color: white;
-            border-radius: 20px;            
+            border-radius: 20px;
             border: 1px solid black;
             border-radius: 20px;
             overflow: hidden;
@@ -545,7 +545,7 @@ button {
     padding: 20px 60px;
     font-size: 20px;
     display: flex;
- 
+
 }
 button:hover{
     background-color: rgb(176, 224, 154);
@@ -583,7 +583,7 @@ button:hover{
         }
 
         .browse-btn {
-            background-color: #4CAF50;
+            background-color: #9dc89f;
             color: white;
             padding: 10px 30px;
             border: none;
@@ -596,4 +596,23 @@ button:hover{
         .browse-btn:hover {
             background-color: #45a049;
         }
-        
+   .button-row {
+            width: 100%;
+            max-width: 380px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        @media (max-width: 576px) {
+            .button-row {
+                flex-direction: column;
+                max-width: none;
+            }
+
+            .button-row .btn {
+                width: 50%  ;
+            }
+        }
