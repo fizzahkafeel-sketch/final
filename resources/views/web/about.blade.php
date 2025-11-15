@@ -41,13 +41,10 @@
             transition: all 0.3s ease;
             background-color: #fff;
             cursor: pointer;
-            width:650px;
-            position:relative;
-            max-width: 90%;
         }
 
         .drop-zone:hover {
-            border-color: #000000;
+            border-color: #007bff;
             background-color: #f8f9fa;
         }
 
@@ -126,30 +123,6 @@
                 width: 100%;
             }
         }
-
-        .hero-header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: calc(100vh - 200px);
-            padding: 40px 20px;
-            position: relative;
-        }
-
-        .drop-zone-container {
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .upload-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center;
-        }
     </style>
 </head>
 
@@ -161,6 +134,7 @@
         <div class="container">
             <nav class="navbar navbar-expand-lg navbar-light border-bottom border-2 border-white">
                     <h1>imageseal</h1>
+
                 <div class="collapse navbar-collapse" id="navbarCollapse">
                     <div class="navbar-nav ms-auto">
                         <a href="{{ route('web-home') }}" class="nav-item nav-link active">Home</a>
@@ -183,27 +157,12 @@
 
 
     <!-- Hero Start -->
-    <div class="container-fluid pb-5 hero-header bg-light mb-5">
-        <div class="drop-zone-container">
-            <div class="drop-zone" id="dropZone">
-                <div class="drop-zone-text">Drag & Drop your image here</div>
-                <div class="drop-zone-subtext">or</div>
-                        <div class="mt-4 button-row">
-                            <button class="browse-btn" type="button" onclick="document.getElementById('fileInput').click()">
-                            Upload Image
-                            </button>
-                        </div>
-                <input type="file" id="fileInput" class="file-input" accept="image/*">
-
-                <div class="mt-3 text-muted small">Supports: JPG, PNG (Max 10MB)</div>
-                <div class="mt-4 button-row">
-                    <button type="button" id="proceedButton" class="btn btn-primary px-4 flex-grow-1" style="text-align: center">
-                        Proceed
-                    </button>
-                </div>
-            </div>
-        </div>
+    <div class="container-fluid pb-5 hero-header bg-light mb-5" style="margin-bottom: 0px">
+     <div class="top-centered-div">
+    <h2>About Us</h2>
+  </div>
     </div>
+
 
 
     <!-- Hero End -->
@@ -457,3 +416,4 @@
 </body>
 
 </html>
+

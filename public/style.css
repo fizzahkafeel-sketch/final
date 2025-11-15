@@ -128,12 +128,13 @@
     background-repeat: no-repeat;
     background-position: center;
     height: 100vh;
-   /* display: flex;*/
-  justify-content: center;   /* center horizontally */
-  align-items: center;       /* center vertically */
-  min-height: 100vh;         /* full viewport height */
-  flex-direction: column;    /* keep the text and drop-zone stacked vertically */
-
+    display: flex;
+    justify-content: center;   /* center horizontally */
+    align-items: center;       /* center vertically */
+    min-height: 100vh;         /* full viewport height */
+    flex-direction: column;
+    place-items: center;    /* keep the text and drop-zone stacked vertically */
+    margin-bottom: 0px;
 }
 
 .hero-header .breadcrumb-item+.breadcrumb-item::before {
@@ -538,7 +539,7 @@
 
 button {
     position:relative;
-    top: 50%;
+    top: 30%;
     left: 50%;
     transform: translate(-50%, -50%);
     background-color: rgb(213, 247, 209);
@@ -551,20 +552,27 @@ button:hover{
     background-color: rgb(176, 224, 154);
 }
    .drop-zone {
-            border: 3px dashed #4CAF50;
-            border-radius: 15px;
-            padding: 40px 30px;
-  text-align: center;
-  background-color: white;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  max-width: 900px;
-  width: 90%;                /* responsive width */
-  /*display: flex;*/
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  margin: 0 auto;
+              border: 3px dashed #4CAF50;
+              border-radius: 15px;
+              padding: 40px 30px;
+              text-align: center;
+              background-color: white;
+              transition: all 0.3s ease;
+              cursor: pointer;
+              max-width: 900px;
+              width: 90%;                /* responsive width */
+              /*display: flex;*/
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+              margin: 0 auto;
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              border: 2px dashed #ccc;
+              border-radius: 8px;
+              text-align: center;
+              background: white;
         }
 
         .drop-zone-text {
@@ -601,7 +609,7 @@ button:hover{
             max-width: 380px;
             margin: 0 auto;
             display: flex;
-            justify-content: space-between;
+            justify-content:center;
             align-items: center;
             gap: 1rem;
         }
@@ -616,3 +624,4 @@ button:hover{
                 width: 50%  ;
             }
         }
+

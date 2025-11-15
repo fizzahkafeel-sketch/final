@@ -9,9 +9,12 @@ Route::post('/upload-image', [WebController::class, 'uploadImage'])->name('uploa
 
 Route::get('/login', function () {
     return view('login'); // ✅ "veiw" → "view"
-});
+})->name('login');
 
 Route::get('/watermark-editor', function () {
-    return view('watermark-editor');
+    return view('web.watermarkeditor');
 })->name('watermark.editor');
 
+Route::get('/about', function () {
+    return view('web.about');
+})->name('about');
