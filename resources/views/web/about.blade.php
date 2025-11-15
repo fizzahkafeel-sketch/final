@@ -139,7 +139,14 @@
                     <div class="navbar-nav ms-auto">
                         <a href="{{ route('web-home') }}" class="nav-item nav-link active">Home</a>
                         <a href="{{ route('about') }}" class="nav-item nav-link">About</a>
-                        <a href="{{ route('login') }}" class="nav-item nav-link">Login</a>
+                        @auth
+                            <form method="POST" action="{{ route('logout') }}" style="display: inline;">
+                                @csrf
+                                <button type="submit" class="nav-item nav-link" style="border: none; background: none; color: #008080; cursor: pointer;">Logout</button>
+                            </form>
+                        @else
+                            <a href="{{ route('login') }}" class="nav-item nav-link">Login</a>
+                        @endauth
 
                             <div class="dropdown-menu bg-light mt-2">
                                 <a href="feature.html" class="dropdown-item">Features</a>

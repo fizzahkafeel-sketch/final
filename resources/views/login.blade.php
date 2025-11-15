@@ -7,6 +7,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="" name="keywords">
     <meta content="" name="description">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Favicon -->
     <link href="image.1.png" rel="icon">
@@ -42,35 +43,47 @@
 
                         <div class="text" style= "margin-top: 40px;">
                             <h3 class="roboto-medium" style="text-align: center;">ImageSeal</h3>
-                            <h4 class="roboto-regular"></h4>
-                            <span class="badge roboto-medium"></span>
-                            <form id="loginForm">
-                                <input type="text" id="username" name="username" placeholder="User Name" required>
-                                <input type="password" id="password" name="password" placeholder="Password" required>
+                            <h4 class="roboto-regular">Login to Your Account</h4>
 
-                                <div id="errorMessage" style="color: red; margin: 10px 0; display: none;"></div>
-                                <div id="successMessage" style="color: green; margin: 10px 0; display: none;"></div>
+                            @if ($errors->any())
+                                <div style="color: red; margin: 10px 0;">
+                                    <ul style="margin: 0; padding-left: 20px;">
+                                        @foreach ($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+
+                            @if (session('success'))
+                                <div style="color: green; margin: 10px 0;">
+                                    {{ session('success') }}
+                                </div>
+                            @endif
+
+                            <form method="POST" action="{{ route('login') }}">
+                                @csrf
+
+                                <input type="text" id="username" name="username" placeholder="Username or Email"
+                                    value="{{ old('username') }}" required autofocus>
+
+                                <input type="password" id="password" name="password" placeholder="Password" required>
 
                                 <button type="submit"
                                     style="background-color: #00796b; color: white; border: none; padding: 10px;
-                       width: 100%; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top=25px">Login
-
+                       width: 100%; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 25px;">Login
                                 </button>
 
-                                <div class="remember-me">
-                                    <input type="checkbox" id="rememberMe" name="rememberMe">
+                                <div class="remember-me" style="margin-top: 15px;">
+                                    <input type="checkbox" id="rememberMe" name="rememberMe"
+                                        {{ old('rememberMe') ? 'checked' : '' }}>
                                     <label for="rememberMe">Remember me</label>
-                                    <a href="#" class="forgot-password">Forgot password?</a>
                                 </div>
                             </form>
 
                             <br />
-                            <div style="text-align: center;" font-size: 16px;>
-                                <br />
-                                <br />
-                                <br />
-                                <br />
-                                <a href="#">Don't have an account? Signup Now</a>
+                            <div style="text-align: center; margin-top: 20px;">
+                                <a href="{{ route('register') }}">Don't have an account? Register Now</a>
                             </div>
 
 

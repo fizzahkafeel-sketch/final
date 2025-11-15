@@ -426,7 +426,14 @@
                     <div class="navbar-nav ms-auto">
                         <a href="{{ route('web-home') }}" class="nav-item nav-link active">Home</a>
                         <a href="{{ route('about') }}" class="nav-item nav-link">About</a>
-                        <a href="{{ route('login') }}" class="nav-item nav-link">Login</a>
+                        @auth
+                            <form method="POST" action="{{ route('logout') }}" style="display: inline;">
+                                @csrf
+                                <button type="submit" class="nav-item nav-link" style="border: none; background: none; color: #008080; cursor: pointer;">Logout</button>
+                            </form>
+                        @else
+                            <a href="{{ route('login') }}" class="nav-item nav-link">Login</a>
+                        @endauth
 
                             <div class="dropdown-menu bg-light mt-2">
                                 <a href="feature.html" class="dropdown-item">Features</a>
@@ -461,6 +468,7 @@
                             <div id="textLayersContainer"></div>
                         </div>
                         <input type="file" id="imageFileInput" accept="image/*" style="display: none;">
+                        <input type="file" id="watermarkImageInput" accept="image/*" style="display: none;">
                     </div>
                 </div>
             </div>
@@ -513,8 +521,8 @@
                     </div>
                 </div>
             </div>
-            <button class="button watermark-button">Watermark Image</button>
-            <button class="button sealyourimagenow-button">Seal your Image Now</button>
+            <button class="button watermark-button" id="watermarkImageButton">Watermark Image</button>
+            <button class="button sealyourimagenow-button" id="sealImageButton">Seal your Image Now</button>
         </div>
     </div>
 
@@ -575,9 +583,14 @@
         let canvas, ctx;
         let currentImage = null;
         let textLayers = [];
+        let watermarkImageLayers = [];
         let selectedTextLayer = null;
+        let selectedWatermarkLayer = null;
         let isDragging = false;
+        let isResizing = false;
         let dragOffset = { x: 0, y: 0 };
+        let resizeHandle = null; // 'nw', 'ne', 'sw', 'se' for corners
+        const handleSize = 8; // Size of resize handles
 
         // Initialize canvas
         function initCanvas() {
@@ -643,6 +656,15 @@
             textLayers.forEach(layer => {
                 drawTextOnCanvas(layer);
             });
+
+            // Draw all watermark image layers on canvas
+            watermarkImageLayers.forEach(layer => {
+                drawWatermarkImageOnCanvas(layer);
+                // Draw selection indicators if selected
+                if (selectedWatermarkLayer && selectedWatermarkLayer.id === layer.id) {
+                    drawWatermarkSelection(layer);
+                }
+            });
         }
 
         // Draw text on canvas
@@ -665,6 +687,87 @@
             ctx.fillText(layer.text, layer.x, layer.y);
 
             ctx.restore();
+        }
+
+        // Draw watermark image on canvas
+        function drawWatermarkImageOnCanvas(layer) {
+            if (!layer.image) return;
+
+            ctx.save();
+
+            // Set opacity
+            const opacity = (parseInt(layer.opacity) || 100) / 100;
+            ctx.globalAlpha = opacity;
+
+            // Draw watermark image at position with size
+            ctx.drawImage(
+                layer.image,
+                layer.x,
+                layer.y,
+                layer.width || layer.image.width,
+                layer.height || layer.image.height
+            );
+
+            ctx.restore();
+        }
+
+        // Draw selection indicators and resize handles for watermark
+        function drawWatermarkSelection(layer) {
+            ctx.save();
+
+            // Draw selection border
+            ctx.strokeStyle = '#007bff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(layer.x, layer.y, layer.width, layer.height);
+
+            // Draw resize handles at corners
+            ctx.fillStyle = '#007bff';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([]);
+
+            const handles = [
+                { x: layer.x, y: layer.y }, // Top-left
+                { x: layer.x + layer.width, y: layer.y }, // Top-right
+                { x: layer.x, y: layer.y + layer.height }, // Bottom-left
+                { x: layer.x + layer.width, y: layer.y + layer.height } // Bottom-right
+            ];
+
+            handles.forEach(handle => {
+                ctx.beginPath();
+                ctx.arc(handle.x, handle.y, handleSize / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            });
+
+            ctx.restore();
+        }
+
+        // Check if point is inside watermark
+        function isPointInWatermark(x, y, layer) {
+            return x >= layer.x && x <= layer.x + layer.width &&
+                   y >= layer.y && y <= layer.y + layer.height;
+        }
+
+        // Get resize handle at point
+        function getResizeHandle(x, y, layer) {
+            const handles = {
+                'nw': { x: layer.x, y: layer.y },
+                'ne': { x: layer.x + layer.width, y: layer.y },
+                'sw': { x: layer.x, y: layer.y + layer.height },
+                'se': { x: layer.x + layer.width, y: layer.y + layer.height }
+            };
+
+            for (let handleName in handles) {
+                const handle = handles[handleName];
+                const distance = Math.sqrt(Math.pow(x - handle.x, 2) + Math.pow(y - handle.y, 2));
+                if (distance <= handleSize) {
+                    return handleName;
+                }
+            }
+
+            return null;
         }
 
         // Create text layer
@@ -866,28 +969,263 @@
             document.getElementById('textInput').value = '';
         });
 
-        // Click on canvas to add text at that position
-        document.getElementById('imageCanvas').addEventListener('click', function(e) {
-            if (!currentImage) return;
+        // Store pending watermark image for positioning
+        let pendingWatermarkImage = null;
 
-            const text = document.getElementById('textInput').value;
-            if (!text.trim()) {
-                // If no text entered, show message
+        // Watermark Image button functionality
+        document.getElementById('watermarkImageButton').addEventListener('click', function() {
+            if (!currentImage) {
+                alert('Please load an image first');
                 return;
             }
 
+            // Trigger file input for watermark image
+            document.getElementById('watermarkImageInput').click();
+        });
+
+        // Handle watermark image file selection
+        document.getElementById('watermarkImageInput').addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+
+                // Validate file type
+                if (!file.type.match('image.*')) {
+                    alert('Please select an image file (JPG, PNG, etc.)');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        // Store as pending - will be positioned on canvas click
+                        pendingWatermarkImage = {
+                            image: img,
+                            width: img.width / 2, // Scale down to 50% by default
+                            height: img.height / 2,
+                            opacity: 50 // Default opacity 50%
+                        };
+
+                        alert('Watermark image loaded! Click on the canvas to position it.');
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Canvas mouse down handler - handles selection, dragging, and resizing
+        document.getElementById('imageCanvas').addEventListener('mousedown', function(e) {
+            if (!currentImage) return;
+
             const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 
-            // Scale coordinates
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            const canvasX = x * scaleX;
-            const canvasY = y * scaleY;
+            // Check if clicking on a resize handle
+            if (selectedWatermarkLayer) {
+                const handle = getResizeHandle(x, y, selectedWatermarkLayer);
+                if (handle) {
+                    isResizing = true;
+                    resizeHandle = handle;
+                    dragOffset = { x, y };
+                    return;
+                }
+            }
 
-            createTextLayer(text, canvasX, canvasY);
-            document.getElementById('textInput').value = '';
+            // Check if clicking on a watermark image
+            let clickedWatermark = null;
+            for (let i = watermarkImageLayers.length - 1; i >= 0; i--) {
+                const layer = watermarkImageLayers[i];
+                if (isPointInWatermark(x, y, layer)) {
+                    clickedWatermark = layer;
+                    break;
+                }
+            }
+
+            if (clickedWatermark) {
+                // Select watermark and prepare for dragging
+                selectedWatermarkLayer = clickedWatermark;
+                selectedTextLayer = null; // Deselect text
+                isDragging = true;
+                dragOffset = {
+                    x: x - clickedWatermark.x,
+                    y: y - clickedWatermark.y
+                };
+                redrawCanvas();
+                return;
+            }
+
+            // Deselect if clicking on empty space
+            if (selectedWatermarkLayer) {
+                selectedWatermarkLayer = null;
+                redrawCanvas();
+            }
+
+            // If there's a pending watermark image, position it
+            if (pendingWatermarkImage) {
+                const canvasX = x - pendingWatermarkImage.width / 2;
+                const canvasY = y - pendingWatermarkImage.height / 2;
+
+                const watermarkLayer = {
+                    id: Date.now(),
+                    image: pendingWatermarkImage.image,
+                    x: canvasX,
+                    y: canvasY,
+                    width: pendingWatermarkImage.width,
+                    height: pendingWatermarkImage.height,
+                    opacity: pendingWatermarkImage.opacity
+                };
+
+                watermarkImageLayers.push(watermarkLayer);
+                selectedWatermarkLayer = watermarkLayer;
+                pendingWatermarkImage = null;
+                redrawCanvas();
+                return;
+            }
+
+            // Handle text input (existing functionality)
+            const text = document.getElementById('textInput').value;
+            if (text.trim()) {
+                createTextLayer(text, x, y);
+                document.getElementById('textInput').value = '';
+            }
+        });
+
+        // Canvas mouse move handler - handles dragging and resizing
+        document.getElementById('imageCanvas').addEventListener('mousemove', function(e) {
+            if (!currentImage) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            // Update cursor style
+            if (selectedWatermarkLayer) {
+                const handle = getResizeHandle(x, y, selectedWatermarkLayer);
+                if (handle) {
+                    canvas.style.cursor = getResizeCursor(handle);
+                } else if (isPointInWatermark(x, y, selectedWatermarkLayer)) {
+                    canvas.style.cursor = 'move';
+                } else {
+                    canvas.style.cursor = 'default';
+                }
+            } else {
+                canvas.style.cursor = 'default';
+            }
+
+            // Handle resizing
+            if (isResizing && selectedWatermarkLayer && resizeHandle) {
+                const layer = selectedWatermarkLayer;
+                const deltaX = x - dragOffset.x;
+                const deltaY = y - dragOffset.y;
+
+                switch (resizeHandle) {
+                    case 'nw': // Top-left
+                        layer.width = (layer.x + layer.width) - x;
+                        layer.height = (layer.y + layer.height) - y;
+                        layer.x = x;
+                        layer.y = y;
+                        break;
+                    case 'ne': // Top-right
+                        layer.width = x - layer.x;
+                        layer.height = (layer.y + layer.height) - y;
+                        layer.y = y;
+                        break;
+                    case 'sw': // Bottom-left
+                        layer.width = (layer.x + layer.width) - x;
+                        layer.height = y - layer.y;
+                        layer.x = x;
+                        break;
+                    case 'se': // Bottom-right
+                        layer.width = x - layer.x;
+                        layer.height = y - layer.y;
+                        break;
+                }
+
+                // Minimum size constraints
+                if (layer.width < 20) layer.width = 20;
+                if (layer.height < 20) layer.height = 20;
+
+                dragOffset = { x, y };
+                redrawCanvas();
+                return;
+            }
+
+            // Handle dragging
+            if (isDragging && selectedWatermarkLayer) {
+                selectedWatermarkLayer.x = x - dragOffset.x;
+                selectedWatermarkLayer.y = y - dragOffset.y;
+
+                // Keep watermark within canvas bounds
+                if (selectedWatermarkLayer.x < 0) selectedWatermarkLayer.x = 0;
+                if (selectedWatermarkLayer.y < 0) selectedWatermarkLayer.y = 0;
+                if (selectedWatermarkLayer.x + selectedWatermarkLayer.width > canvas.width) {
+                    selectedWatermarkLayer.x = canvas.width - selectedWatermarkLayer.width;
+                }
+                if (selectedWatermarkLayer.y + selectedWatermarkLayer.height > canvas.height) {
+                    selectedWatermarkLayer.y = canvas.height - selectedWatermarkLayer.height;
+                }
+
+                redrawCanvas();
+            }
+        });
+
+        // Canvas mouse up handler - stops dragging and resizing
+        document.getElementById('imageCanvas').addEventListener('mouseup', function(e) {
+            isDragging = false;
+            isResizing = false;
+            resizeHandle = null;
+            canvas.style.cursor = 'default';
+        });
+
+        // Get cursor style for resize handles
+        function getResizeCursor(handle) {
+            const cursors = {
+                'nw': 'nw-resize',
+                'ne': 'ne-resize',
+                'sw': 'sw-resize',
+                'se': 'se-resize'
+            };
+            return cursors[handle] || 'default';
+        }
+
+        // Delete selected watermark on Delete key
+        document.addEventListener('keydown', function(e) {
+            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedWatermarkLayer) {
+                const index = watermarkImageLayers.findIndex(l => l.id === selectedWatermarkLayer.id);
+                if (index !== -1) {
+                    watermarkImageLayers.splice(index, 1);
+                    selectedWatermarkLayer = null;
+                    redrawCanvas();
+                }
+            }
+        });
+
+        // Seal image and redirect to download page
+        document.getElementById('sealImageButton').addEventListener('click', function() {
+            if (!currentImage) {
+                alert('Please load an image first');
+                return;
+            }
+
+            // Check if there are any watermarks (text or image)
+            if (textLayers.length === 0 && watermarkImageLayers.length === 0) {
+                alert('Please add at least one watermark (text or image) before sealing the image.');
+                return;
+            }
+
+            // Ensure canvas is up to date with all text layers
+            redrawCanvas();
+
+            // Convert canvas to data URL
+            const imageDataUrl = canvas.toDataURL('image/png');
+
+            // Store in localStorage for the download page
+            localStorage.setItem('sealedImage', imageDataUrl);
+
+            // Redirect to download page
+            window.location.href = '{{ route("download.image") }}';
         });
     </script>
 </body>

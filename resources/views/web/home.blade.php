@@ -41,9 +41,10 @@
             transition: all 0.3s ease;
             background-color: #fff;
             cursor: pointer;
-            width:650px;
-            position:relative;
-            max-width: 90%;
+            width: 100%;
+            max-width: 650px;
+            position: relative;
+            margin: 0 auto;
         }
 
         .drop-zone:hover {
@@ -135,11 +136,19 @@
             min-height: calc(100vh - 200px);
             padding: 40px 20px;
             position: relative;
+            width: 100%;
         }
 
         .drop-zone-container {
             width: 100%;
-            max-width: 600px;
+            max-width: 650px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .drop-zone {
             margin: 0 auto;
         }
 
@@ -165,7 +174,14 @@
                     <div class="navbar-nav ms-auto">
                         <a href="{{ route('web-home') }}" class="nav-item nav-link active">Home</a>
                         <a href="{{ route('about') }}" class="nav-item nav-link">About</a>
-                        <a href="{{ route('login') }}" class="nav-item nav-link">Login</a>
+                        @auth
+                            <form method="POST" action="{{ route('logout') }}" style="display: inline;">
+                                @csrf
+                                <button type="submit" class="nav-item nav-link" style="border: none; background: none; color: #008080; cursor: pointer;">Logout</button>
+                            </form>
+                        @else
+                            <a href="{{ route('login') }}" class="nav-item nav-link">Login</a>
+                        @endauth
 
                             <div class="dropdown-menu bg-light mt-2">
                                 <a href="feature.html" class="dropdown-item">Features</a>
