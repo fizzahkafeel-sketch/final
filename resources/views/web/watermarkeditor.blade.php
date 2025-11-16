@@ -655,6 +655,10 @@
             // Draw all text layers on canvas
             textLayers.forEach(layer => {
                 drawTextOnCanvas(layer);
+                // Draw selection indicators if selected
+                if (selectedTextLayer && selectedTextLayer.id === layer.id) {
+                    drawTextSelection(layer);
+                }
             });
 
             // Draw all watermark image layers on canvas
@@ -687,6 +691,60 @@
             ctx.fillText(layer.text, layer.x, layer.y);
 
             ctx.restore();
+        }
+
+        // Draw text selection indicators
+        function drawTextSelection(layer) {
+            ctx.save();
+
+            // Set font to measure text
+            const fontSize = parseInt(layer.size) || 24;
+            const fontFamily = layer.font || 'Arial';
+            ctx.font = `${fontSize}px ${fontFamily}`;
+
+            // Measure text
+            const metrics = ctx.measureText(layer.text);
+            const textWidth = metrics.width;
+            const textHeight = fontSize;
+
+            // Draw selection border around text
+            ctx.strokeStyle = '#007bff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(
+                layer.x - 5,
+                layer.y - textHeight - 5,
+                textWidth + 10,
+                textHeight + 10
+            );
+
+            ctx.restore();
+        }
+
+        // Check if point is inside text
+        function isPointInText(x, y, layer) {
+            ctx.save();
+
+            // Set font to measure text
+            const fontSize = parseInt(layer.size) || 24;
+            const fontFamily = layer.font || 'Arial';
+            ctx.font = `${fontSize}px ${fontFamily}`;
+
+            // Measure text
+            const metrics = ctx.measureText(layer.text);
+            const textWidth = metrics.width;
+            const textHeight = fontSize;
+
+            // Check if point is within text bounds
+            const textX = layer.x - 5;
+            const textY = layer.y - textHeight - 5;
+            const textWidthWithPadding = textWidth + 10;
+            const textHeightWithPadding = textHeight + 10;
+
+            ctx.restore();
+
+            return x >= textX && x <= textX + textWidthWithPadding &&
+                   y >= textY && y <= textY + textHeightWithPadding;
         }
 
         // Draw watermark image on canvas
@@ -784,6 +842,11 @@
             };
 
             textLayers.push(layer);
+            // Automatically select the newly created text layer
+            selectedTextLayer = layer;
+            selectedWatermarkLayer = null;
+            // Sync controls with the new text properties
+            syncControlsWithSelectedText();
             redrawCanvas();
             updateTextLayerDisplay(layer);
 
@@ -797,7 +860,21 @@
             redrawCanvas();
         }
 
-        // Update selected text layer properties
+        // Sync controls with selected text layer properties
+        function syncControlsWithSelectedText() {
+            if (!selectedTextLayer) return;
+
+            // Update all controls to match the selected text
+            document.getElementById('textSize').value = selectedTextLayer.size || 24;
+            document.getElementById('textSizeValue').textContent = selectedTextLayer.size || 24;
+            document.getElementById('textFont').value = selectedTextLayer.font || 'Arial';
+            document.getElementById('textOpacity').value = selectedTextLayer.opacity || 100;
+            document.getElementById('textOpacityValue').textContent = selectedTextLayer.opacity || 100;
+            document.getElementById('textColor').value = selectedTextLayer.color || '#000000';
+            document.getElementById('textInput').value = selectedTextLayer.text || '';
+        }
+
+        // Update selected text layer properties from controls
         function updateSelectedTextLayer() {
             if (!selectedTextLayer) return;
 
@@ -807,6 +884,11 @@
                 layer.font = document.getElementById('textFont').value;
                 layer.opacity = document.getElementById('textOpacity').value;
                 layer.color = document.getElementById('textColor').value;
+                // Update the selectedTextLayer reference to keep it in sync
+                selectedTextLayer.size = layer.size;
+                selectedTextLayer.font = layer.font;
+                selectedTextLayer.opacity = layer.opacity;
+                selectedTextLayer.color = layer.color;
                 redrawCanvas();
             }
         }
@@ -944,9 +1026,24 @@
             updateSelectedTextLayer();
         });
 
-        // Update color
+        // Update color (both input and change for real-time updates)
+        document.getElementById('textColor').addEventListener('input', function() {
+            updateSelectedTextLayer();
+        });
         document.getElementById('textColor').addEventListener('change', function() {
             updateSelectedTextLayer();
+        });
+
+        // Update text content
+        document.getElementById('textInput').addEventListener('input', function() {
+            if (selectedTextLayer) {
+                const layer = textLayers.find(l => l.id === selectedTextLayer.id);
+                if (layer) {
+                    layer.text = this.value;
+                    selectedTextLayer.text = this.value;
+                    redrawCanvas();
+                }
+            }
         });
 
         // Add text button
@@ -1033,6 +1130,31 @@
                 }
             }
 
+            // Check if clicking on a text layer
+            let clickedText = null;
+            for (let i = textLayers.length - 1; i >= 0; i--) {
+                const layer = textLayers[i];
+                if (isPointInText(x, y, layer)) {
+                    clickedText = layer;
+                    break;
+                }
+            }
+
+            if (clickedText) {
+                // Select text and prepare for dragging
+                selectedTextLayer = clickedText;
+                selectedWatermarkLayer = null; // Deselect watermark
+                isDragging = true;
+                dragOffset = {
+                    x: x - clickedText.x,
+                    y: y - clickedText.y
+                };
+                // Sync controls with selected text properties
+                syncControlsWithSelectedText();
+                redrawCanvas();
+                return;
+            }
+
             // Check if clicking on a watermark image
             let clickedWatermark = null;
             for (let i = watermarkImageLayers.length - 1; i >= 0; i--) {
@@ -1057,8 +1179,9 @@
             }
 
             // Deselect if clicking on empty space
-            if (selectedWatermarkLayer) {
+            if (selectedWatermarkLayer || selectedTextLayer) {
                 selectedWatermarkLayer = null;
+                selectedTextLayer = null;
                 redrawCanvas();
             }
 
@@ -1110,8 +1233,34 @@
                 } else {
                     canvas.style.cursor = 'default';
                 }
+            } else if (selectedTextLayer) {
+                if (isPointInText(x, y, selectedTextLayer)) {
+                    canvas.style.cursor = 'move';
+                } else {
+                    canvas.style.cursor = 'default';
+                }
             } else {
-                canvas.style.cursor = 'default';
+                // Check if hovering over any text or watermark
+                let hovering = false;
+                for (let i = textLayers.length - 1; i >= 0; i--) {
+                    if (isPointInText(x, y, textLayers[i])) {
+                        canvas.style.cursor = 'move';
+                        hovering = true;
+                        break;
+                    }
+                }
+                if (!hovering) {
+                    for (let i = watermarkImageLayers.length - 1; i >= 0; i--) {
+                        if (isPointInWatermark(x, y, watermarkImageLayers[i])) {
+                            canvas.style.cursor = 'move';
+                            hovering = true;
+                            break;
+                        }
+                    }
+                }
+                if (!hovering) {
+                    canvas.style.cursor = 'default';
+                }
             }
 
             // Handle resizing
@@ -1152,7 +1301,27 @@
                 return;
             }
 
-            // Handle dragging
+            // Handle dragging for text
+            if (isDragging && selectedTextLayer) {
+                selectedTextLayer.x = x - dragOffset.x;
+                selectedTextLayer.y = y - dragOffset.y;
+
+                // Keep text within reasonable bounds (allow some overflow for better UX)
+                const fontSize = parseInt(selectedTextLayer.size) || 24;
+                if (selectedTextLayer.x < -50) selectedTextLayer.x = -50;
+                if (selectedTextLayer.y < fontSize) selectedTextLayer.y = fontSize;
+                if (selectedTextLayer.x > canvas.width + 50) {
+                    selectedTextLayer.x = canvas.width + 50;
+                }
+                if (selectedTextLayer.y > canvas.height + 50) {
+                    selectedTextLayer.y = canvas.height + 50;
+                }
+
+                redrawCanvas();
+                return;
+            }
+
+            // Handle dragging for watermark
             if (isDragging && selectedWatermarkLayer) {
                 selectedWatermarkLayer.x = x - dragOffset.x;
                 selectedWatermarkLayer.y = y - dragOffset.y;
@@ -1190,14 +1359,23 @@
             return cursors[handle] || 'default';
         }
 
-        // Delete selected watermark on Delete key
+        // Delete selected text or watermark on Delete key
         document.addEventListener('keydown', function(e) {
-            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedWatermarkLayer) {
-                const index = watermarkImageLayers.findIndex(l => l.id === selectedWatermarkLayer.id);
-                if (index !== -1) {
-                    watermarkImageLayers.splice(index, 1);
-                    selectedWatermarkLayer = null;
-                    redrawCanvas();
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                if (selectedTextLayer) {
+                    const index = textLayers.findIndex(l => l.id === selectedTextLayer.id);
+                    if (index !== -1) {
+                        textLayers.splice(index, 1);
+                        selectedTextLayer = null;
+                        redrawCanvas();
+                    }
+                } else if (selectedWatermarkLayer) {
+                    const index = watermarkImageLayers.findIndex(l => l.id === selectedWatermarkLayer.id);
+                    if (index !== -1) {
+                        watermarkImageLayers.splice(index, 1);
+                        selectedWatermarkLayer = null;
+                        redrawCanvas();
+                    }
                 }
             }
         });

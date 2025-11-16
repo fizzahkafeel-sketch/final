@@ -138,7 +138,7 @@
                 <div class="collapse navbar-collapse" id="navbarCollapse">
                     <div class="navbar-nav ms-auto">
                         <a href="{{ route('web-home') }}" class="nav-item nav-link active">Home</a>
-                        <a href="{{ route('about') }}" class="nav-item nav-link">About</a>
+                        <a href="{{ route('about') }}" class="nav-item nav-link">About Us</a>
                         @auth
                             <form method="POST" action="{{ route('logout') }}" style="display: inline;">
                                 @csrf
@@ -167,11 +167,9 @@
     <div class="container-fluid pb-5 hero-header bg-light mb-5" style="margin-bottom: 0px">
      <div class="top-centered-div">
     <h2>About Us</h2>
+    <p>Our website is designed to make adding watermarks to your images quick, easy, and accessible for everyone. Whether you're a photographer, designer, or content creator, we help you protect your work with customized, professional-looking watermarks—all with just a few clicks. Our goal is to provide a fast, user-friendly tool that keeps your images safe while maintaining their quality.</p>
   </div>
     </div>
-
-
-
     <!-- Hero End -->
 
 

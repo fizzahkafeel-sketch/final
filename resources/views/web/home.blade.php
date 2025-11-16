@@ -211,7 +211,7 @@
                         </div>
                 <input type="file" id="fileInput" class="file-input" accept="image/*">
 
-                <div class="mt-3 text-muted small">Supports: JPG, PNG (Max 10MB)</div>
+                <div class="mt-3 text-muted small">Supports:PNG only (Max 10MB)</div>
                 <div class="mt-4 button-row">
                     <button type="button" id="proceedButton" class="btn btn-primary px-4 flex-grow-1" style="text-align: center">
                         Proceed
@@ -221,15 +221,11 @@
         </div>
     </div>
 
-
     <!-- Hero End -->
 
 
-
-
-
     <!-- Footer Start -->
-    <div class="container-fluid bg-dark text-white-50 footer pt-5">
+   <div class="container-fluid bg-dark text-white-50 footer pt-5">
         <div class="container py-5">
             <div class="row g-5">
                 <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.1s">
